@@ -1,0 +1,56 @@
+---
+- name: solve advent of code day 2
+  hosts: localhost
+  remote_user: root
+  vars:
+     stdin: "{{ lookup('file', './sample.txt') | split('\n') }}"
+     matching_reds: []
+     matching_greens: []
+     matching_blues: []
+     sum_of_powers: []
+  tasks:
+  - name: get sets
+    set_fact:
+      sets: "{{ sets }} + [{{ item | split(':') | last | replace(' ','')| split(';') }}]"
+    loop: "{{ stdin }}"
+    vars:
+      sets: []
+  - name: get max values
+    set_fact:
+      reds: "{{ reds }} + [{{ item | join(',')| regex_findall('\\d+red') | join(',') | regex_findall('\\d+') | map('int') | max }}]"
+      greens: "{{ greens }} + [{{ item | join(',')| regex_findall('\\d+green') | join(',') | regex_findall('\\d+') | map('int') | max }}]"
+      blues: "{{ blues }} + [{{ item | join(',')| regex_findall('\\d+blue') | join(',') | regex_findall('\\d+') | map('int') | max }}]"
+    loop: "{{ sets }}"
+    vars:
+      reds: []
+      greens: []
+      blues: []
+  - name: set matching games for reds
+    set_fact:
+      matching_reds: "{{ matching_reds }} + [{{ i +1 }}]"
+    with_items: "{{ reds }}"
+    loop_control:
+      index_var: i
+    when: "{{ item }} <= 12"
+  - name: set matching games for greens
+    set_fact:
+      matching_greens: "{{ matching_greens }} + [{{ i +1 }}]"
+    with_items: "{{ greens }}"
+    loop_control:
+      index_var: i
+    when: "{{ item }} <= 13"
+  - name: set matching games for blues
+    set_fact:
+      matching_blues: "{{ matching_blues }} + [{{ i + 1 }}]"
+    with_items: "{{ blues }}"
+    loop_control:
+      index_var: i
+    when: "{{ item }} <= 14"
+  - name: get power of games
+    set_fact:
+      sum_of_powers: "{{ sum_of_powers }} + [{{reds[i] * blues[i] * greens[i]}}]"
+    with_items: "{{ reds }}"
+    loop_control:
+      index_var: i
+  - debug: msg="part1 - {{ matching_blues | intersect(matching_greens) | intersect(matching_reds) | sum }}"
+  - debug: msg="part2 - {{ sum_of_powers | map('int') | sum }}"
